@@ -1,0 +1,8 @@
+{
+    "package_name": "load_average_overlay",
+    "package_menu_name": "Load Average Overlay",
+    "package_version": "1.0.8",
+    "vendor": "Pavel Kotyza",
+    "required_camscripter_version": "1.5.3",
+    "ui_link": "/local/camscripter/package/load_average_overlay/index.html"
+}

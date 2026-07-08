@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>Load Average Overlay — Settings</title>
+<style>
+    :root[data-theme="light"] {
+        --bg: #f5f6f8;
+        --panel: #ffffff;
+        --text: #1c1f24;
+        --muted: #6b7280;
+        --border: #e2e5e9;
+        --accent: #2563eb;
+        --accent-text: #ffffff;
+        --input-bg: #ffffff;
+    }
+    :root[data-theme="dark"] {
+        --bg: #14161a;
+        --panel: #1d2025;
+        --text: #e9eaec;
+        --muted: #9aa0a8;
+        --border: #2c3038;
+        --accent: #3b82f6;
+        --accent-text: #ffffff;
+        --input-bg: #24272d;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+    }
+    /* Tuned for a 1920x1080 desktop browser window: wide 3-column layout so
+       everything (including Save) sits comfortably above the fold with no scrolling. */
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 22px 32px 0; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .title-row { display: flex; align-items: baseline; gap: 10px; }
+    h1 { font-size: 20px; margin: 0; }
+    .version-badge {
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 3px 10px;
+    }
+    .theme-toggle {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    section {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        height: 100%;
+    }
+    section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+    .row { display: flex; gap: 14px; margin-bottom: 12px; }
+    .row > div { flex: 1; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    input[type=text], input[type=number], input[type=password], select {
+        width: 100%;
+        padding: 9px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--input-bg);
+        color: var(--text);
+        font-size: 14px;
+    }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .checkbox-row input { width: auto; }
+    .field-toggle-label { display: flex !important; align-items: center; gap: 5px; cursor: pointer; }
+    .field-toggle-label input { width: auto; margin: 0; }
+    input[type=text]:disabled, input[type=number]:disabled { opacity: .45; cursor: not-allowed; }
+    .hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+
+    .columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+    .col { display: flex; flex-direction: column; }
+    @media (max-width: 1300px) {
+        .columns { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+        .columns { grid-template-columns: 1fr; }
+    }
+
+    .live-grid { display: flex; gap: 16px; margin-bottom: 12px; }
+    .live-card {
+        flex: 1;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        text-align: center;
+    }
+    .live-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .live-card .value { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; transition: color .15s; }
+    /* Same RGB the app sends as <field>_color to CamOverlay — this is what will
+       actually appear on the video overlay, shown here as a live preview. */
+    .live-card .value.sev-green { color: rgb(0, 200, 0); }
+    .live-card .value.sev-orange { color: rgb(255, 165, 0); }
+    .live-card .value.sev-red { color: rgb(255, 0, 0); }
+    .live-card .sev-note { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+    .push-line { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .push-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; flex-shrink: 0; }
+    .push-dot.ok { background: #16a34a; }
+    .push-dot.err { background: #dc2626; }
+    .push-toggle { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; margin-left: auto; }
+    .push-detail {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 8px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 100px;
+        overflow: auto;
+        display: none;
+    }
+    .push-detail.open { display: block; }
+
+    .savebar {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        padding: 14px 0;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 4px;
+    }
+    button.primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    #status { font-size: 13px; color: var(--muted); }
+    #status.ok { color: #16a34a; }
+    #status.err { color: #dc2626; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="title-row">
+            <h1>Load Average Overlay</h1>
+            <span class="version-badge" id="versionBadge">v…</span>
+        </div>
+        <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+    </header>
+
+    <section>
+        <h2 style="display:flex; align-items:center; justify-content:space-between;">
+            <span>Live status</span>
+            <span style="font-weight:400; text-transform:none; letter-spacing:0; font-size:11px;">
+                <span style="color:rgb(0,200,0);">● &lt;2</span>
+                &nbsp;&nbsp;<span style="color:rgb(255,165,0);">● 2–3</span>
+                &nbsp;&nbsp;<span style="color:rgb(255,0,0);">● &gt;3</span>
+                — colors shown match what's pushed to the overlay
+            </span>
+        </h2>
+        <div class="live-grid">
+            <div class="live-card">
+                <div class="label">1 min</div>
+                <div class="value" id="liveLoad1">—</div>
+            </div>
+            <div class="live-card">
+                <div class="label">5 min</div>
+                <div class="value" id="liveLoad5">—</div>
+            </div>
+            <div class="live-card">
+                <div class="label">15 min</div>
+                <div class="value" id="liveLoad15">—</div>
+            </div>
+        </div>
+        <div class="push-line">
+            <span class="push-dot" id="pushDot"></span>
+            <span id="pushSummary">Waiting for first update…</span>
+            <button class="push-toggle" id="pushToggle">details ▾</button>
+        </div>
+        <div class="push-detail" id="pushDetail"></div>
+    </section>
+
+    <div class="columns">
+        <div class="col">
+            <section>
+                <h2>Output camera (running CamOverlay)</h2>
+                <div class="row">
+                    <div>
+                        <label>Protocol</label>
+                        <select id="protocol">
+                            <option value="http">http</option>
+                            <option value="https">https</option>
+                            <option value="https_insecure">https (insecure)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Port</label>
+                        <input type="number" id="port" placeholder="80">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>IP address</label>
+                        <input type="text" id="ip" placeholder="127.0.0.1">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>User</label>
+                        <input type="text" id="user" placeholder="root">
+                    </div>
+                    <div>
+                        <label>Password</label>
+                        <input type="password" id="pass">
+                    </div>
+                </div>
+                <div class="hint">Use 127.0.0.1 if CamOverlay runs on this same camera.</div>
+            </section>
+        </div>
+
+        <div class="col">
+            <section>
+                <h2>CamOverlay Custom Graphics</h2>
+                <div class="row">
+                    <div>
+                        <label>Service ID</label>
+                        <input type="number" id="service_id" placeholder="1">
+                    </div>
+                    <div>
+                        <label>Field mode</label>
+                        <select id="mode">
+                            <option value="separate">Separate</option>
+                            <option value="combined">Combined</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label class="field-toggle-label">
+                            <input type="checkbox" id="show_load1"> Field — 1 min
+                        </label>
+                        <input type="text" id="field_load1">
+                    </div>
+                    <div>
+                        <label class="field-toggle-label">
+                            <input type="checkbox" id="show_load5"> Field — 5 min
+                        </label>
+                        <input type="text" id="field_load5">
+                    </div>
+                    <div>
+                        <label class="field-toggle-label">
+                            <input type="checkbox" id="show_load15"> Field — 15 min
+                        </label>
+                        <input type="text" id="field_load15">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Combined field name</label>
+                        <input type="text" id="field_combined">
+                    </div>
+                    <div>
+                        <label>Combined format</label>
+                        <input type="text" id="combined_format" placeholder="{load1} {load5} {load15}">
+                    </div>
+                </div>
+                <div class="hint">Uncheck a value (or leave its field name blank) to stop pushing it — field names must match CamOverlay's Custom Graphics service.</div>
+            </section>
+        </div>
+
+        <div class="col">
+            <section>
+                <h2>CamStreamer Cloud (optional)</h2>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="use_cloud">
+                    <label for="use_cloud" style="margin:0;">Route via device-connect.net</label>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Cloud URL</label>
+                        <input type="text" id="cloud_url" placeholder="https://xxxx.device-connect.net">
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>Device access token</label>
+                        <input type="text" id="device_access_token">
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Update interval</h2>
+                <div class="row">
+                    <div>
+                        <label>Milliseconds between pushes</label>
+                        <input type="number" id="update_interval_ms" min="500" step="500" placeholder="5000">
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="savebar">
+        <button class="primary" id="saveBtn">Save settings</button>
+        <span id="status"></span>
+    </div>
+</div>
+<script src="index.js"></script>
+</body>
+</html>

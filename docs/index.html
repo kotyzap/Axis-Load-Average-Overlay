@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load Average Overlay — Live CPU Health for Axis Cameras</title>
+<meta name="description" content="Load Average Overlay is a CamScripter microapp that pushes real-time Axis camera CPU load onto the video feed via CamOverlay — no external monitoring stack required.">
+<style>
+    :root[data-theme="light"] {
+        --bg: #f5f6f8;
+        --panel: #ffffff;
+        --text: #1c1f24;
+        --muted: #6b7280;
+        --border: #e2e5e9;
+        --accent: #2563eb;
+        --accent-text: #ffffff;
+        --input-bg: #ffffff;
+        --code-bg: #eef0f3;
+    }
+    :root[data-theme="dark"] {
+        --bg: #14161a;
+        --panel: #1d2025;
+        --text: #e9eaec;
+        --muted: #9aa0a8;
+        --border: #2c3038;
+        --accent: #3b82f6;
+        --accent-text: #ffffff;
+        --input-bg: #24272d;
+        --code-bg: #24272d;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav */
+    nav {
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+    .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.15); }
+    .nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+    .nav-links a { text-decoration: none; color: var(--text); }
+    .nav-links a:hover { color: var(--accent); }
+    .theme-toggle {
+        border: 1px solid var(--border);
+        background: var(--input-bg);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 7px 12px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+
+    /* Hero */
+    header.hero { padding: 64px 0 40px; }
+    .hero .wrap { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+    .version-badge {
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 12px;
+    }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 4px; }
+    .badge-row img { height: 20px; display: block; }
+    h1 { font-size: 40px; margin: 6px 0; max-width: 720px; }
+    .subtitle { font-size: 18px; color: var(--muted); max-width: 620px; margin: 0 0 8px; }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 8px;
+        padding: 12px 22px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid var(--border);
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .btn.secondary { background: var(--panel); color: var(--text); }
+
+    .hero-shot {
+        margin-top: 28px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 60px -20px rgba(0,0,0,.25);
+        max-width: 900px;
+    }
+    .hero-shot img { display: block; width: 100%; height: auto; }
+
+    /* Sections */
+    section { padding: 56px 0; }
+    section.alt { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 0 0 8px; }
+    h2 { font-size: 28px; margin: 0 0 10px; }
+    .section-lead { color: var(--muted); max-width: 640px; margin-bottom: 32px; }
+
+    /* Cards / grid */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 22px;
+    }
+    .card .icon { font-size: 22px; margin-bottom: 10px; }
+    .card h3 { font-size: 16px; margin: 0 0 8px; }
+    .card p { font-size: 14px; color: var(--muted); margin: 0; }
+
+    /* Severity strip */
+    .severity-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 24px; }
+    .severity-card { flex: 1; min-width: 220px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--panel); }
+    .severity-card img { width: 100%; display: block; }
+    .severity-card .cap { padding: 12px 14px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .sev-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .sev-green { background: #16a34a; }
+    .sev-orange { background: #f59e0b; }
+    .sev-red { background: #dc2626; }
+
+    /* Screenshot showcase */
+    .showcase { display: flex; flex-direction: column; gap: 40px; }
+    .showcase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+    .showcase-row.reverse .showcase-text { order: 2; }
+    .showcase-row.reverse .showcase-img { order: 1; }
+    @media (max-width: 860px) {
+        .showcase-row, .showcase-row.reverse .showcase-text, .showcase-row.reverse .showcase-img { grid-template-columns: 1fr; order: initial; }
+        .showcase-row { display: flex; flex-direction: column; }
+    }
+    .showcase-img img {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 12px 30px -16px rgba(0,0,0,.25);
+        display: block;
+    }
+    .showcase-text h3 { font-size: 20px; margin: 0 0 10px; }
+    .showcase-text p { color: var(--muted); font-size: 15px; }
+    .showcase-text ul { color: var(--muted); font-size: 15px; padding-left: 20px; margin: 12px 0 0; }
+    .showcase-text li { margin-bottom: 6px; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    td, th { padding: 14px 18px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--muted); width: 40%; }
+
+    code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+    /* Footer */
+    footer { padding: 40px 0 60px; text-align: center; color: var(--muted); font-size: 13px; }
+    footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<nav>
+    <div class="wrap">
+        <div class="brand"><span class="dot"></span> Load Average Overlay</div>
+        <div class="nav-links">
+            <a href="#how-it-works">How it works</a>
+            <a href="#features">Features</a>
+            <a href="#screenshots">Screenshots</a>
+            <a href="#specs">Specs</a>
+            <a href="https://github.com/kotyzap/Axis-Load-Average-Overlay" target="_blank" rel="noopener">GitHub</a>
+        </div>
+        <button class="theme-toggle" id="themeToggle">🌙 Dark</button>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="wrap">
+        <div class="badge-row">
+            <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" loading="lazy">
+            <img src="https://img.shields.io/badge/version-1.0.8-blue.svg" alt="Version 1.0.8" loading="lazy">
+            <img src="https://img.shields.io/badge/platform-Axis%20Camera-000000.svg" alt="Platform: Axis Camera" loading="lazy">
+            <img src="https://img.shields.io/badge/built%20for-CamScripter-2563eb.svg" alt="Built for CamScripter" loading="lazy">
+        </div>
+        <h1>Turn your Axis camera's own health data into a live, color-coded overlay</h1>
+        <p class="subtitle">Load Average Overlay is a lightweight CamScripter microapp that reads your Axis camera's CPU load and pushes it straight onto the video feed via CamOverlay — no dashboards, no agents, no extra infrastructure.</p>
+        <div class="cta-row">
+            <a class="btn primary" href="#how-it-works">See how it works</a>
+            <a class="btn secondary" href="https://github.com/kotyzap/Axis-Load-Average-Overlay" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+        <div class="hero-shot">
+            <img src="img/load-average-overlay-axis-live-view-separate-fields.png" alt="Axis Q1656 camera live view with Load Average Overlay showing 1, 5, and 15 minute CPU load values in the top-right corner" loading="lazy">
+        </div>
+    </div>
+</header>
+
+<section class="alt">
+    <div class="wrap">
+        <p class="eyebrow">Why it matters</p>
+        <h2>Catch camera problems before they hit your footage</h2>
+        <p class="section-lead">A camera silently choking on CPU load drops frames, delays events, and degrades video quality long before it fully fails. This overlay makes that invisible risk visible — directly on the stream operators already watch.</p>
+        <div class="grid">
+            <div class="card">
+                <div class="icon">🚨</div>
+                <h3>Catch problems early</h3>
+                <p>Spot an overloaded camera before it drops frames, misses events, or fails outright — while there's still time to act.</p>
+            </div>
+            <div class="card">
+                <div class="icon">🧩</div>
+                <h3>Zero extra infrastructure</h3>
+                <p>No dashboards to stand up, no agents to install, no separate monitoring service. It runs on the camera and displays through CamOverlay — a tool you already use.</p>
+            </div>
+            <div class="card">
+                <div class="icon">🎥</div>
+                <h3>Built for fleets</h3>
+                <p>Deploy across an entire estate of Axis devices and give NOCs and field techs an at-a-glance signal for which units need attention.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="how-it-works">
+    <div class="wrap">
+        <p class="eyebrow">How it works</p>
+        <h2>Straight from <code>/proc/loadavg</code> to your overlay</h2>
+        <p class="section-lead">No polling agents, no middleware. The app runs on the camera itself and talks directly to CamOverlay's Custom Graphics API.</p>
+        <table>
+            <tr><td>1. Read</td><td>Polls <code>/proc/loadavg</code> on the camera at a configurable interval (default: every 5 seconds).</td></tr>
+            <tr><td>2. Push</td><td>Sends 1‑minute, 5‑minute, and 15‑minute load averages to a CamOverlay Custom Graphics service.</td></tr>
+            <tr><td>3. Color</td><td>Every value is color-coded automatically — green under 2.0, orange between 2.0–3.0, red above 3.0 — so severity reads instantly.</td></tr>
+            <tr><td>4. Deploy anywhere</td><td>Works identically on a local network camera or one reachable only through CamStreamer Cloud (device-connect.net).</td></tr>
+        </table>
+
+        <div class="severity-row">
+            <div class="severity-card">
+                <img src="img/load-average-overlay-hero-warning-orange.png" alt="Load Average Overlay showing an orange warning-level 1-minute load value on the camera overlay" loading="lazy">
+                <div class="cap"><span class="sev-dot sev-orange"></span> 2.0–3.0 — warning, shown in orange</div>
+            </div>
+            <div class="severity-card">
+                <img src="img/load-average-overlay-hero-critical-red.png" alt="Load Average Overlay showing a red critical-level 1-minute load value on the camera overlay" loading="lazy">
+                <div class="cap"><span class="sev-dot sev-red"></span> Above 3.0 — critical, shown in red</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="alt" id="features">
+    <div class="wrap">
+        <p class="eyebrow">Key features</p>
+        <h2>Everything you need, nothing you don't</h2>
+        <p class="section-lead">A focused feature set built for fast setup and confident, unattended operation.</p>
+        <div class="grid">
+            <div class="card">
+                <div class="icon">🎛️</div>
+                <h3>Flexible display modes</h3>
+                <p>Show load values as separate overlay fields, a single combined string, or both at once — with a customizable text format.</p>
+            </div>
+            <div class="card">
+                <div class="icon">📊</div>
+                <h3>Live settings dashboard</h3>
+                <p>A built-in configuration UI shows real-time load values and the last push result before you save, so you know it's working without checking camera logs.</p>
+            </div>
+            <div class="card">
+                <div class="icon">🌗</div>
+                <h3>Light &amp; dark themes</h3>
+                <p>The settings UI matches whatever environment you're configuring from.</p>
+            </div>
+            <div class="card">
+                <div class="icon">🔄</div>
+                <h3>Resilient upgrades</h3>
+                <p>Settings from older versions merge safely with new defaults, so updating the app never breaks an existing configuration.</p>
+            </div>
+            <div class="card">
+                <div class="icon">☁️</div>
+                <h3>Cloud-ready</h3>
+                <p>Works identically whether the camera is on your local network or reachable only through CamStreamer Cloud.</p>
+            </div>
+            <div class="card">
+                <div class="icon">⚡</div>
+                <h3>Fast to deploy</h3>
+                <p>Install through CamScripter's micro app manager and be pushing live data within minutes.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="screenshots">
+    <div class="wrap">
+        <p class="eyebrow">Screenshots</p>
+        <h2>See it in action</h2>
+        <p class="section-lead">From the live camera view to the settings dashboard — here's what running Load Average Overlay actually looks like.</p>
+
+        <div class="showcase">
+            <div class="showcase-row">
+                <div class="showcase-img">
+                    <img src="img/load-average-overlay-settings-ui-light-theme.png" alt="Load Average Overlay settings dashboard in light theme, showing live status, output camera, CamOverlay, and cloud configuration panels" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>A settings UI that shows its own status</h3>
+                    <p>Configure the output camera, CamOverlay Custom Graphics fields, cloud routing, and update interval — all from one screen, with live load values and the last push result shown at the top.</p>
+                    <ul>
+                        <li>Real-time 1/5/15-minute load preview while you configure</li>
+                        <li>Push status with HTTP response details</li>
+                        <li>Field-by-field toggles for exactly what gets sent</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="showcase-row reverse">
+                <div class="showcase-img">
+                    <img src="img/load-average-overlay-settings-ui-dark-theme.png" alt="Load Average Overlay settings dashboard in dark theme" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>Dark theme included</h3>
+                    <p>Switch themes with one click — handy when you're configuring cameras from a dim NOC or matching your existing tooling.</p>
+                </div>
+            </div>
+
+            <div class="showcase-row">
+                <div class="showcase-img">
+                    <img src="img/load-average-overlay-combined-mode-settings-preview.png" alt="Browser window with Load Average Overlay settings open above an Axis camera live view showing a combined CAMERA LOAD overlay field" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>Combined field mode</h3>
+                    <p>Prefer a single, compact readout instead of three separate boxes? Combined mode merges 1/5/15-minute values into one customizable string, like <code>Load: {load1} {load5} {load15}</code>.</p>
+                </div>
+            </div>
+
+            <div class="showcase-row reverse">
+                <div class="showcase-img">
+                    <img src="img/load-average-overlay-axis-live-view-combined-field.png" alt="Axis camera live view showing a single combined CAMERA LOAD overlay value in the top-right corner" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>Clean, unobtrusive on-screen readout</h3>
+                    <p>Whichever mode you choose, the overlay sits quietly in a corner of the frame — informative without getting in the way of the footage that matters.</p>
+                </div>
+            </div>
+
+            <div class="showcase-row">
+                <div class="showcase-img">
+                    <img src="img/load-average-overlay-camscripter-app-install.png" alt="CamScripter App micro app manager showing Load Average Overlay installed and enabled at version 1.0.8" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>Installs like any other micro app</h3>
+                    <p>Managed through CamScripter's own micro app manager, alongside your other apps — enable, disable, or update it in a couple of clicks.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="alt" id="specs">
+    <div class="wrap">
+        <p class="eyebrow">At a glance</p>
+        <h2>Quick specs</h2>
+        <table>
+            <tr><td>Runs on</td><td>Axis cameras via CamScripter</td></tr>
+            <tr><td>Displays via</td><td>CamOverlay Custom Graphics</td></tr>
+            <tr><td>Data source</td><td>Native <code>/proc/loadavg</code></td></tr>
+            <tr><td>Update interval</td><td>Configurable (default 5s)</td></tr>
+            <tr><td>Deployment</td><td>Local network or CamStreamer Cloud</td></tr>
+            <tr><td>Current version</td><td>1.0.8</td></tr>
+        </table>
+    </div>
+</section>
+
+<section>
+    <div class="wrap">
+        <p class="eyebrow">Who it's for</p>
+        <h2>Built for the people watching the footage</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Integrators &amp; installers</h3>
+                <p>A fast, visual way to confirm a camera is healthy right after deployment.</p>
+            </div>
+            <div class="card">
+                <h3>NOC &amp; monitoring teams</h3>
+                <p>CPU health baked into the video wall itself, alongside the footage it affects.</p>
+            </div>
+            <div class="card">
+                <h3>Axis fleet operators</h3>
+                <p>A no-cost, no-dependency way to spot performance issues early across many cameras.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="wrap">
+        <p>Load Average Overlay — a CamScripter microapp for Axis cameras. <a href="https://github.com/kotyzap/Axis-Load-Average-Overlay" target="_blank" rel="noopener">View source on GitHub</a></p>
+        <p>Licensed under the <a href="https://github.com/kotyzap/Axis-Load-Average-Overlay/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.</p>
+    </div>
+</footer>
+
+<script>
+    (function () {
+        var root = document.documentElement;
+        var toggle = document.getElementById('themeToggle');
+        var stored = localStorage.getItem('lao-theme');
+        if (stored) { root.setAttribute('data-theme', stored); }
+
+        function updateLabel() {
+            var isDark = root.getAttribute('data-theme') === 'dark';
+            toggle.textContent = isDark ? '☀️ Light' : '🌙 Dark';
+        }
+        updateLabel();
+
+        toggle.addEventListener('click', function () {
+            var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            root.setAttribute('data-theme', next);
+            localStorage.setItem('lao-theme', next);
+            updateLabel();
+        });
+    })();
+</script>
+</body>
+</html>

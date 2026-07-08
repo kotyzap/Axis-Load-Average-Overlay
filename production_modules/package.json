@@ -1,0 +1,20 @@
+{
+    "name": "load_average_overlay",
+    "version": "1.0.0",
+    "description": "CamScripter microapp: reads camera CPU load average from /proc/loadavg and pushes it to a CamOverlay Custom Graphics service.",
+    "main": "dist/main.js",
+    "scripts": {
+        "build": "tsc",
+        "try": "PERSISTENT_DATA_PATH=\"./localdata/\" ts-node src/main.ts",
+        "zip:package": "tsc && node node_modules/camstreamerlib/CreatePackage.js -i"
+    },
+    "dependencies": {
+        "camstreamerlib": "^3.5.3",
+        "zod": "^3.23.8"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5",
+        "ts-node": "^10.9.2",
+        "@types/node": "^20.12.12"
+    }
+}
