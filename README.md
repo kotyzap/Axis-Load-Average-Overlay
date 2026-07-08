@@ -5,9 +5,9 @@
 ![Platform](https://img.shields.io/badge/platform-Axis%20Camera-000000.svg)
 ![CamScripter](https://img.shields.io/badge/built%20for-CamScripter-2563eb.svg)
 
-Turn your Axis camera's own health data into a live, color-coded overlay — no external monitoring stack required.
+Turn your Axis camera's own health data into a live, color-coded overlay 🚦 — no external monitoring stack required.
 
-Load Average Overlay is a lightweight CamScripter microapp that reads your Axis camera's CPU load straight from the device and pushes it onto the video feed in real time via CamOverlay. If a camera is struggling — overloaded by too many analytics apps, a bad stream config, or failing hardware — you'll see it before your footage does.
+📷 Axis Load Average Overlay is a lightweight ⚙️ CamScripter microapp that reads your Axis camera's CPU load straight from the device and pushes it onto the video feed in real time via CamOverlay. If a camera is struggling — overloaded by too many analytics apps, a bad stream config, or failing hardware — you'll see it before your footage does. ⚡
 
 ## Why it matters
 
