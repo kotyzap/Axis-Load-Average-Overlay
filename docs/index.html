@@ -102,7 +102,9 @@
         box-shadow: 0 20px 60px -20px rgba(0,0,0,.25);
         max-width: 900px;
     }
-    .hero-shot img { display: block; width: 100%; height: auto; }
+    .hero-shot img, .hero-shot video { display: block; width: 100%; height: auto; }
+    .video-embed { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+    .video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
     /* Sections */
     section { padding: 56px 0; }
@@ -174,6 +176,7 @@
     <div class="wrap">
         <div class="brand"><span class="dot"></span> Load Average Overlay</div>
         <div class="nav-links">
+            <a href="#demo">Demo</a>
             <a href="#how-it-works">How it works</a>
             <a href="#features">Features</a>
             <a href="#screenshots">Screenshots</a>
@@ -185,7 +188,7 @@
     </div>
 </nav>
 
-<header class="hero">
+<header class="hero" id="demo">
     <div class="wrap">
         <div class="badge-row">
             <a href="https://github.com/kotyzap/Axis-Load-Average-Overlay/blob/main/LICENSE" target="_blank" rel="noopener"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" loading="lazy"></a>
@@ -193,15 +196,24 @@
             <img src="https://img.shields.io/badge/platform-Axis%20Camera-000000.svg" alt="Platform: Axis Camera" loading="lazy">
             <img src="https://img.shields.io/badge/built%20for-CamScripter-2563eb.svg" alt="Built for CamScripter" loading="lazy">
         </div>
-        <h1>Turn your Axis camera's own health data into a live, color-coded overlay</h1>
-        <p class="subtitle">Load Average Overlay is a lightweight CamScripter microapp that reads your Axis camera's CPU load and pushes it straight onto the video feed via CamOverlay — no dashboards, no agents, no extra infrastructure.</p>
+        <h1>Turn your Axis camera's own health data into a live, color-coded overlay 🚦</h1>
+        <p class="subtitle">📷 Axis Load Average Overlay is a lightweight ⚙️ CamScripter microapp that reads your Axis camera's CPU load and pushes it straight onto the video feed via CamOverlay — no dashboards, no agents, no extra infrastructure. ⚡</p>
         <div class="cta-row">
             <a class="btn primary" href="https://github.com/kotyzap/Axis-Load-Average-Overlay/releases" target="_blank" rel="noopener">⬇ Download latest release</a>
             <a class="btn secondary" href="#how-it-works">See how it works</a>
             <a class="btn secondary" href="https://github.com/kotyzap/Axis-Load-Average-Overlay" target="_blank" rel="noopener">View on GitHub</a>
         </div>
         <div class="hero-shot">
-            <img src="img/load-average-overlay-axis-live-view-separate-fields.png" alt="Axis Q1656 camera live view with Load Average Overlay showing 1, 5, and 15 minute CPU load values in the top-right corner" loading="lazy">
+            <div class="video-embed">
+                <iframe
+                    src="https://www.youtube.com/embed/U-cC-TBiMQk?rel=0"
+                    title="Axis Load Average Overlay — demo of main features"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    loading="lazy">
+                </iframe>
+            </div>
         </div>
     </div>
 </header>
@@ -330,6 +342,16 @@
 
             <div class="showcase-row">
                 <div class="showcase-img">
+                    <img src="img/load-average-overlay-axis-live-view-separate-fields.png" alt="Axis Q1656 camera live view with Load Average Overlay showing 1, 5, and 15 minute CPU load values as three separate overlay fields" loading="lazy">
+                </div>
+                <div class="showcase-text">
+                    <h3>Separate field mode</h3>
+                    <p>Show 1, 5, and 15-minute load averages as three independent overlay fields, each individually color-coded — ideal when you want the detail broken out at a glance.</p>
+                </div>
+            </div>
+
+            <div class="showcase-row reverse">
+                <div class="showcase-img">
                     <img src="img/load-average-overlay-combined-mode-settings-preview.png" alt="Browser window with Load Average Overlay settings open above an Axis camera live view showing a combined CAMERA LOAD overlay field" loading="lazy">
                 </div>
                 <div class="showcase-text">
@@ -338,7 +360,7 @@
                 </div>
             </div>
 
-            <div class="showcase-row reverse">
+            <div class="showcase-row">
                 <div class="showcase-img">
                     <img src="img/load-average-overlay-axis-live-view-combined-field.png" alt="Axis camera live view showing a single combined CAMERA LOAD overlay value in the top-right corner" loading="lazy">
                 </div>
@@ -348,7 +370,7 @@
                 </div>
             </div>
 
-            <div class="showcase-row">
+            <div class="showcase-row reverse">
                 <div class="showcase-img">
                     <img src="img/load-average-overlay-camscripter-app-install.png" alt="CamScripter App micro app manager showing Load Average Overlay installed and enabled at version 1.0.8" loading="lazy">
                 </div>
