@@ -128,9 +128,10 @@
     .card p { font-size: 14px; color: var(--muted); margin: 0; }
 
     /* Severity strip */
-    .severity-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 24px; }
-    .severity-card { flex: 1; min-width: 220px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--panel); }
-    .severity-card img { width: 100%; display: block; }
+    .severity-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+    @media (max-width: 640px) { .severity-row { grid-template-columns: 1fr; } }
+    .severity-card { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--panel); }
+    .severity-card img { width: 100%; aspect-ratio: 377 / 136; object-fit: cover; display: block; }
     .severity-card .cap { padding: 12px 14px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
     .sev-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
     .sev-green { background: #16a34a; }
@@ -257,6 +258,10 @@
         </table>
 
         <div class="severity-row">
+            <div class="severity-card">
+                <img src="img/load-average-overlay-hero-healthy-green.png" alt="Load Average Overlay showing healthy green load values on the camera overlay" loading="lazy">
+                <div class="cap"><span class="sev-dot sev-green"></span> Under 2.0 — healthy, shown in green</div>
+            </div>
             <div class="severity-card">
                 <img src="img/load-average-overlay-hero-warning-orange.png" alt="Load Average Overlay showing an orange warning-level 1-minute load value on the camera overlay" loading="lazy">
                 <div class="cap"><span class="sev-dot sev-orange"></span> 2.0–3.0 — warning, shown in orange</div>
